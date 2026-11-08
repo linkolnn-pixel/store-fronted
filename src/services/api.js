@@ -92,3 +92,45 @@ export const fetchProduct = async (id) => {
     const response = await apiClient.get(`/catalog/${id}`);
     return response.data;
 };
+
+// Функция-помощник для получения заголовков
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('adminToken');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+// Обновление товара (теперь с токеном)
+export const updateProductMeta = async (productId, data) => {
+    const response = await apiClient.patch(`/catalog/${productId}/meta`, data, {
+        headers: getAuthHeaders() // Прикрепляем ключ
+    });
+    return response.data;
+};
+
+// Загрузка фото (теперь с токеном)
+export const uploadProductImage = async (productId, file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await apiClient.post(`/catalog/${productId}/image`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            ...getAuthHeaders() // Прикрепляем ключ
+        }
+    });
+    return response.data;
+};
+
+
+// Категории
+
+export const fetchCategories = async () => {
+  try {
+    // Делаем запрос к нашему новому эндпоинту FastAPI
+    const response = await apiClient.get('/catalog/categories');
+    return response.data;
+  } catch (error) {
+    console.error("Ошибка при получении категорий:", error);
+    return []; // Возвращаем пустой массив в случае ошибки, чтобы не сломать сайт
+  }
+};

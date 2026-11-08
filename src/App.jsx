@@ -5,10 +5,13 @@ import Catalog from './pages/Catalog';
 import Services from './pages/Services';
 import Cart from './pages/Cart';
 import Success from './pages/Success';
-// 1. Добавляем импорт страницы товара (предполагается, что она в папке pages)
 import ProductPage from './pages/ProductPage';
+import AdminProductEdit from './pages/AdminProductEdit';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
 
-// Вынесли шапку в отдельный компонент
+import ProtectedRoute from './components/ProtectedRoute';
+
 function NavBar() {
   const { cartCount } = useCart();
 
@@ -61,14 +64,29 @@ function App() {
 
           <div style={{ flex: 1, backgroundColor: '#fff' }}>
             <Routes>
+              {/* Публичные маршруты */}
               <Route path="/" element={<About />} />
               <Route path="/services" element={<Services />} />
               <Route path="/catalog" element={<Catalog />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/success" element={<Success />} />
-
-              {/* 2. Добавляем маршрут для детальной страницы товара */}
               <Route path="/product/:id" element={<ProductPage />} />
+
+              {/* Авторизация админа */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+
+              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+
+              {/* 2. ЗАЩИЩЕННЫЙ МАРШРУТ */}
+              <Route
+                path="/admin/product/:id"
+                element={
+                  <ProtectedRoute>
+                    <AdminProductEdit />
+                  </ProtectedRoute>
+                }
+              />
+
             </Routes>
           </div>
         </div>
