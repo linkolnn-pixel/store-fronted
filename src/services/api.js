@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 // Базовый URL вашего FastAPI бэкенда
-const API_URL = 'http://127.0.0.1:8000/api/v1';
+export const BACKEND_URL = 'http://127.0.0.1:8000';
+
+const API_URL = `${BACKEND_URL}/api/v1`;
 
 export const apiClient = axios.create({
     baseURL: API_URL,
@@ -82,5 +84,11 @@ export const checkoutCart = async (customerData) => {
         customer_phone: customerData.phone,
         customer_email: customerData.email
     });
+    return response.data;
+};
+
+// Получить один товар по ID
+export const fetchProduct = async (id) => {
+    const response = await apiClient.get(`/catalog/${id}`);
     return response.data;
 };

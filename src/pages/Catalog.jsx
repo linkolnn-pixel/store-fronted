@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { addToCart, fetchCatalog } from '../services/api';
+import { Link } from 'react-router-dom'; // Импорт Link добавлен
+import { addToCart, fetchCatalog, BACKEND_URL } from '../services/api';
 import { useCart } from '../context/CartContext';
 
 // Стили для маленьких кнопок +/-
@@ -111,37 +112,52 @@ function Catalog() {
             onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.05)'}
             onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
             >
-              {/* ===== НОВЫЙ БЛОК С КАРТИНКОЙ ===== */}
-              <div style={{
-                width: '100%',
-                height: '220px',
-                marginBottom: '15px',
-                backgroundColor: '#f9f9f9',
-                borderRadius: '4px',
-                overflow: 'hidden'
-              }}>
-                <img
-                  // Если массив images есть и в нем есть ссылки - берем первую [0]. Иначе показываем серую заглушку
-                  src={product.images && product.images.length > 0
-                        ? product.images[0]
-                        : 'https://placehold.co/300x300/eeeeee/999999?text=Нет+фото'}
-                  alt={product.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </div>
-              {/* ===== КОНЕЦ БЛОКА С КАРТИНКОЙ ===== */}
-              {/*<div style={{ fontSize: '12px', color: '#888', textTransform: 'uppercase', marginBottom: '10px' }}>
-                {product.category || 'Косметика'} {/* Выводим бренд вместо ID категории */}
-              {/*</div> */}
-              <h3 style={{ fontSize: '18px', fontWeight: '500', margin: '0 0 10px 0', flexGrow: 1 }}>
-                {/* Обратите внимание: DRF может использовать поле name вместо title */}
-                {product.name}
-              </h3>
-              <div style={{ color: '#555', fontSize: '14px', marginBottom: '20px' }}>
-                Объем: {Number(product.quantity_value)} {product.measure_unit}
-              </div>
 
-              {/* Обновленный блок цены и управления количеством */}
+              {/* ===== НАЧАЛО КЛИКАБЕЛЬНОЙ ССЫЛКИ НА СТРАНИЦУ ТОВАРА ===== */}
+              <Link
+                to={`/product/${product.id}`}
+                style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', flexGrow: 1 }}
+              >
+                {/* БЛОК С КАРТИНКОЙ */}
+                <div style={{
+                  width: '100%',
+                  height: '220px',
+                  marginBottom: '15px',
+                  backgroundColor: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '10px' // Отступ внутри контейнера, чтобы картинка не прилипала к краям
+                }}>
+                  <img
+                    src={product.images && product.images.length > 0
+                          ? `${BACKEND_URL}${product.images[0]}`
+                          : 'https://placehold.co/300x300/eeeeee/999999?text=Нет+фото'}
+                    alt={product.name}
+                    style={{
+                      // Картинка не будет превышать размеры контейнера
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                      // Сохраняет пропорции без обрезки.
+                      // Если хотите, чтобы картинка заполняла весь блок с обрезкой - используйте 'cover' вместо 'contain'
+                      objectFit: 'contain'
+                    }}
+                  />
+                </div>
+
+                {/* НАЗВАНИЕ ТОВАРА */}
+                <h3 style={{ fontSize: '18px', fontWeight: '500', margin: '0 0 10px 0', flexGrow: 1 }}>
+                  {product.name}
+                </h3>
+
+                {/* ОБЪЕМ */}
+                <div style={{ color: '#555', fontSize: '14px', marginBottom: '20px' }}>
+                  Объем: {Number(product.quantity_value)} {product.measure_unit}
+                </div>
+              </Link>
+              {/* ===== КОНЕЦ КЛИКАБЕЛЬНОЙ ССЫЛКИ ===== */}
+
+              {/* Обновленный блок цены и управления количеством (СНАРУЖИ ССЫЛКИ) */}
               <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '15px' }}>
                 <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px' }}>
                   {product.sale_price} ₽

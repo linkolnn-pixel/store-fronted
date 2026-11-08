@@ -5,10 +5,12 @@ import Catalog from './pages/Catalog';
 import Services from './pages/Services';
 import Cart from './pages/Cart';
 import Success from './pages/Success';
+// 1. Добавляем импорт страницы товара (предполагается, что она в папке pages)
+import ProductPage from './pages/ProductPage';
 
 // Вынесли шапку в отдельный компонент
 function NavBar() {
-  const { cartCount } = useCart(); // Достаем счетчик из глобального состояния
+  const { cartCount } = useCart();
 
   const linkStyle = {
     textDecoration: 'none',
@@ -34,7 +36,6 @@ function NavBar() {
       <Link to="/catalog" style={linkStyle}>Каталог товаров</Link>
       <Link to="/cart" style={{...linkStyle, color: '#d4af37', fontWeight: 'bold', display: 'flex', alignItems: 'center'}}>
         Корзина
-        {/* Показываем кружочек с цифрой, только если счетчик > 0 */}
           <span style={{
             background: '#d4af37',
             color: '#fff',
@@ -65,6 +66,9 @@ function App() {
               <Route path="/catalog" element={<Catalog />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/success" element={<Success />} />
+
+              {/* 2. Добавляем маршрут для детальной страницы товара */}
+              <Route path="/product/:id" element={<ProductPage />} />
             </Routes>
           </div>
         </div>

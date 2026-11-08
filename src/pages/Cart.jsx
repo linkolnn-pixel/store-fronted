@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { fetchCart, checkoutCart, updateCartItem, removeCartItem } from '../services/api';
+// Обязательно убедитесь, что BACKEND_URL экспортируется из вашего файла api.js
+import { fetchCart, checkoutCart, updateCartItem, removeCartItem, BACKEND_URL } from '../services/api';
 import { useCart } from '../context/CartContext';
 
 // Стили для маленьких кнопок управления
@@ -77,6 +78,9 @@ function Cart() {
       await updateCartCount(); // Обнуляем счетчик в шапке после оформления
       if (result.payment_url) {
         window.location.href = result.payment_url;
+      } else {
+        // Если платежной ссылки нет, просто перекидываем на страницу успеха
+        window.location.href = '/success';
       }
     } catch (error) {
       alert('Ошибка при оформлении заказа. Проверьте введенные данные.');
@@ -106,41 +110,63 @@ function Cart() {
         <div style={{ flex: '1 1 400px' }}>
           <h2 style={{ fontSize: '18px', marginBottom: '20px' }}>Ваш выбор</h2>
           <div style={{ backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '8px' }}>
+
             {cart.items.map((item, index) => (
-              <div key={index} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #eaeaea', paddingBottom: '15px' }}>
-                <div>
-                  <div style={{ fontWeight: '500', marginBottom: '8px' }}>ID: {item.product_id}</div>
+              <div key={index} style={{ display: 'flex', gap: '15px', marginBottom: '15px', borderBottom: '1px solid #eaeaea', paddingBottom: '15px' }}>
 
-                  {/* Интерактивный блок управления количеством */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <button
-                      type="button"
-                      onClick={() => handleUpdateQuantity(item.product_id, item.quantity - 1)}
-                      style={quantityBtnStyle}
-                    >-</button>
+                {/* ===== БЛОК С КАРТИНКОЙ ===== */}
+                <div style={{ width: '80px', height: '80px', backgroundColor: '#fff', borderRadius: '4px', overflow: 'hidden', flexShrink: 0 }}>
+                  <img
+                    src={item.image ? `${BACKEND_URL}${item.image}` : 'https://placehold.co/80x80/eeeeee/999999?text=Нет+фото'}
+                    alt={item.name || `Товар ${item.product_id}`}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                </div>
 
-                    <span style={{ fontSize: '14px', width: '20px', textAlign: 'center' }}>
-                      {item.quantity}
-                    </span>
+                {/* ===== БЛОК С ИНФОРМАЦИЕЙ И КНОПКАМИ ===== */}
+                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  {/* Название товара */}
+                  <div style={{ fontWeight: '500', fontSize: '16px', lineHeight: '1.2' }}>
+                    {item.name || `Товар #${item.product_id}`}
+                  </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleUpdateQuantity(item.product_id, item.quantity + 1)}
-                      style={quantityBtnStyle}
-                    >+</button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                    {/* Интерактивный блок управления количеством */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateQuantity(item.product_id, item.quantity - 1)}
+                        style={quantityBtnStyle}
+                      >-</button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveItem(item.product_id)}
-                      style={{ ...quantityBtnStyle, color: '#ff4d4f', borderColor: '#ff4d4f', width: 'auto', padding: '0 8px', fontSize: '12px' }}
-                    >
-                      Удалить
-                    </button>
+                      <span style={{ fontSize: '14px', width: '20px', textAlign: 'center' }}>
+                        {item.quantity}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => handleUpdateQuantity(item.product_id, item.quantity + 1)}
+                        style={quantityBtnStyle}
+                      >+</button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(item.product_id)}
+                        style={{ ...quantityBtnStyle, color: '#ff4d4f', borderColor: '#ff4d4f', width: 'auto', padding: '0 8px', fontSize: '12px', marginLeft: '5px' }}
+                      >
+                        Удалить
+                      </button>
+                    </div>
+
+                    {/* Вывод итоговой цены за позицию */}
+                    <div style={{ fontWeight: 'bold' }}>
+                      {item.price * item.quantity} ₽
+                    </div>
                   </div>
                 </div>
-                <div style={{ fontWeight: 'bold' }}>{item.price * item.quantity} ₽</div>
               </div>
             ))}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '20px', fontSize: '20px', fontWeight: 'bold' }}>
               <span>Итого:</span>
               <span>{cart.total} ₽</span>
@@ -160,7 +186,7 @@ function Cart() {
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
+                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' }}
               />
             </div>
             <div>
@@ -171,7 +197,7 @@ function Cart() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleInputChange}
-                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
+                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' }}
               />
             </div>
             <div>
@@ -181,7 +207,7 @@ function Cart() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
+                style={{ width: '100%', padding: '10px', border: '1px solid #ccc', borderRadius: '4px', boxSizing: 'border-box' }}
               />
             </div>
 
