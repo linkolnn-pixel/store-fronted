@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { addToCart, fetchCatalog, BACKEND_URL, fetchCategories } from '../services/api'; // Импортировали fetchCategories
+import { addToCart, fetchCatalog, BACKEND_URL, fetchCategories } from '../services/api';
 import { useCart } from '../context/CartContext';
 
 // Стили для маленьких кнопок +/-
@@ -18,14 +18,141 @@ const quantityBtnStyle = {
   color: '#333'
 };
 
+// === 1. НОВЫЙ КОМПОНЕНТ ГАЛЕРЕИ ДЛЯ КАРТОЧКИ ТОВАРА ===
+function CatalogItemGallery({ images, productName }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [zoomProps, setZoomProps] = useState({ show: false, x: 0, y: 0 });
+
+  const validImages = images && images.length > 0
+    ? images.map(img => img.startsWith('http') ? img : `${BACKEND_URL}${img}`)
+    : ['https://placehold.co/300x300/eeeeee/999999?text=Нет+фото'];
+
+  const handleMouseMove = (e) => {
+    // === ДОБАВЛЕНА ПРОВЕРКА НА ТАЧСКРИН ===
+    // Если устройство поддерживает касания (телефон/планшет), прерываем функцию
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+      return;
+    }
+
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomProps({ show: true, x, y });
+  };
+
+  const handleMouseLeave = () => {
+    setZoomProps({ ...zoomProps, show: false });
+  };
+
+  const handlePrev = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev === 0 ? validImages.length - 1 : prev - 1));
+  };
+
+  const handleNext = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCurrentIndex((prev) => (prev === validImages.length - 1 ? 0 : prev + 1));
+  };
+
+  return (
+    <div
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      style={{
+        width: '100%',
+        height: '220px',
+        marginBottom: '15px',
+        backgroundColor: '#ffffff',
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: '8px'
+      }}
+    >
+      <img
+        src={validImages[currentIndex]}
+        alt={productName}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain',
+          opacity: zoomProps.show ? 0 : 1
+        }}
+      />
+
+      {zoomProps.show && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundImage: `url(${validImages[currentIndex]})`,
+            backgroundPosition: `${zoomProps.x}% ${zoomProps.y}%`,
+            backgroundSize: '200%',
+            backgroundRepeat: 'no-repeat',
+            pointerEvents: 'none'
+          }}
+        />
+      )}
+
+      {validImages.length > 1 && (
+        <>
+          <button
+            onClick={handlePrev}
+            onMouseEnter={handleMouseLeave} // (Выключает лупу)
+            onMouseMove={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute', left: '5px', top: '50%', transform: 'translateY(-50%)',
+              background: 'rgba(255, 255, 255, 0.8)', border: 'none', borderRadius: '50%',
+              width: '28px', height: '28px', cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              zIndex: 2, color: '#333', fontSize: '16px'
+            }}
+          >
+            &#8249;
+          </button>
+
+          <button
+            onClick={handleNext}
+            onMouseEnter={handleMouseLeave}
+            onMouseMove={(e) => e.stopPropagation()}
+            style={{
+              position: 'absolute', right: '5px', top: '50%', transform: 'translateY(-50%)',
+              background: 'rgba(255, 255, 255, 0.8)', border: 'none', borderRadius: '50%',
+              width: '28px', height: '28px', cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              zIndex: 2, color: '#333', fontSize: '16px'
+            }}
+          >
+            &#8250;
+          </button>
+
+          <div style={{
+            position: 'absolute', bottom: '10px', left: '0', width: '100%',
+            display: 'flex', justifyContent: 'center', gap: '5px', pointerEvents: 'none'
+          }}>
+            {validImages.map((_, idx) => (
+              <div key={idx} style={{
+                width: '6px', height: '6px', borderRadius: '50%',
+                background: currentIndex === idx ? '#333' : '#ccc',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.2)'
+              }} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function Catalog() {
   const { updateCartCount } = useCart();
   const [products, setProducts] = useState([]);
 
-  // === НОВЫЕ СОСТОЯНИЯ ДЛЯ КАТЕГОРИЙ ===
+  // Состояния для категорий и брендов
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState(null);
-  // =====================================
+  const [activeBrand, setActiveBrand] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [addingId, setAddingId] = useState(null);
@@ -35,7 +162,6 @@ function Catalog() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // === ЗАГРУЖАЕМ ОДНОВРЕМЕННО ТОВАРЫ И КАТЕГОРИИ ===
         const [catalogData, categoriesData] = await Promise.all([
           fetchCatalog(),
           fetchCategories()
@@ -44,14 +170,12 @@ function Catalog() {
         const productsArray = catalogData.results ? catalogData.results : catalogData;
         setProducts(productsArray);
         setCategories(categoriesData);
-
       } catch (error) {
         console.error("Ошибка загрузки данных:", error);
       } finally {
         setLoading(false);
       }
     };
-
     loadData();
   }, []);
 
@@ -66,7 +190,6 @@ function Catalog() {
 
   const handleAddToCart = async (product) => {
     const qty = quantities[product.id] || 1;
-
     setAddingId(product.id);
     try {
       await addToCart(product.id, qty, product.sale_price);
@@ -81,15 +204,18 @@ function Catalog() {
     }
   };
 
-  // === ЛОГИКА ФИЛЬТРАЦИИ ===
-  const filteredProducts = activeCategory
-    ? products.filter(product => product.category === activeCategory)
-    : products;
-  // =========================
+  // Получаем массив уникальных брендов (игнорируя пустые значения)
+  const uniqueBrands = [...new Set(products.map(p => p.brand).filter(Boolean))];
+
+  // Логика двойной фильтрации (по категории и бренду)
+  const filteredProducts = products.filter(product => {
+    const matchCategory = activeCategory ? product.category === activeCategory : true;
+    const matchBrand = activeBrand ? product.brand === activeBrand : true;
+    return matchCategory && matchBrand;
+  });
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 20px', fontFamily: 'sans-serif', color: '#333' }}>
-
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 'normal', letterSpacing: '2px', textTransform: 'uppercase' }}>
           Домашний уход
@@ -97,60 +223,93 @@ function Catalog() {
         <p style={{ color: '#777', marginTop: '10px' }}>Профессиональная косметика из наличия</p>
       </div>
 
-      {/* ===== ПАНЕЛЬ КНОПОК КАТЕГОРИЙ ===== */}
-      {!loading && categories.length > 0 && (
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '40px', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => setActiveCategory(null)}
-            style={{
-              padding: '8px 20px',
-              borderRadius: '20px',
-              border: activeCategory === null ? 'none' : '1px solid #ccc',
-              backgroundColor: activeCategory === null ? '#333' : '#fff',
-              color: activeCategory === null ? '#fff' : '#333',
-              cursor: 'pointer',
-              fontWeight: '500',
-              transition: 'all 0.2s'
-            }}
-          >
-            Все
-          </button>
+      {/* ===== ПАНЕЛЬ ФИЛЬТРОВ ===== */}
+      {!loading && (
+        <div style={{ marginBottom: '40px' }}>
 
-          {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              style={{
-                padding: '8px 20px',
-                borderRadius: '20px',
-                border: activeCategory === cat.id ? 'none' : '1px solid #ccc',
-                backgroundColor: activeCategory === cat.id ? '#333' : '#fff',
-                color: activeCategory === cat.id ? '#fff' : '#333',
-                cursor: 'pointer',
-                fontWeight: '500',
-                transition: 'all 0.2s'
-              }}
-            >
-              {cat.name}
-            </button>
-          ))}
+          {/* ФИЛЬТР ПО КАТЕГОРИЯМ */}
+          {categories.length > 0 && (
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ color: '#888', fontSize: '14px', marginRight: '10px' }}>Категория:</span>
+              <button
+                onClick={() => setActiveCategory(null)}
+                style={{
+                  padding: '6px 16px', borderRadius: '20px', fontSize: '14px',
+                  border: activeCategory === null ? 'none' : '1px solid #ccc',
+                  backgroundColor: activeCategory === null ? '#333' : '#fff',
+                  color: activeCategory === null ? '#fff' : '#333',
+                  cursor: 'pointer', transition: 'all 0.2s'
+                }}
+              >
+                Все
+              </button>
+              {categories.map(cat => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  style={{
+                    padding: '6px 16px', borderRadius: '20px', fontSize: '14px',
+                    border: activeCategory === cat.id ? 'none' : '1px solid #ccc',
+                    backgroundColor: activeCategory === cat.id ? '#333' : '#fff',
+                    color: activeCategory === cat.id ? '#fff' : '#333',
+                    cursor: 'pointer', transition: 'all 0.2s'
+                  }}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* ФИЛЬТР ПО БРЕНДАМ */}
+          {uniqueBrands.length > 0 && (
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ color: '#888', fontSize: '14px', marginRight: '10px' }}>Бренд:</span>
+              <button
+                onClick={() => setActiveBrand(null)}
+                style={{
+                  padding: '6px 16px', borderRadius: '20px', fontSize: '14px',
+                  border: activeBrand === null ? 'none' : '1px solid #ccc',
+                  backgroundColor: activeBrand === null ? '#d4af37' : '#fff',
+                  color: activeBrand === null ? '#fff' : '#333',
+                  cursor: 'pointer', transition: 'all 0.2s'
+                }}
+              >
+                Все
+              </button>
+              {uniqueBrands.map(brand => (
+                <button
+                  key={brand}
+                  onClick={() => setActiveBrand(brand)}
+                  style={{
+                    padding: '6px 16px', borderRadius: '20px', fontSize: '14px',
+                    border: activeBrand === brand ? 'none' : '1px solid #ccc',
+                    backgroundColor: activeBrand === brand ? '#d4af37' : '#fff',
+                    color: activeBrand === brand ? '#fff' : '#333',
+                    cursor: 'pointer', transition: 'all 0.2s'
+                  }}
+                >
+                  {brand}
+                </button>
+              ))}
+            </div>
+          )}
+
         </div>
       )}
-      {/* ==================================== */}
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Загрузка ассортимента со склада...</div>
       ) : products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Товаров пока нет в наличии.</div>
       ) : filteredProducts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>В этой категории пока нет товаров.</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>По вашему запросу товаров не найдено.</div>
       ) : (
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
           gap: '30px'
         }}>
-          {/* ОБРАТИТЕ ВНИМАНИЕ: ЗДЕСЬ ТЕПЕРЬ МАПИМ filteredProducts */}
           {filteredProducts.map((product) => (
             <div key={product.id} style={{
               border: '1px solid #eaeaea',
@@ -164,43 +323,26 @@ function Catalog() {
             onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.05)'}
             onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
             >
-
               <Link
                 to={`/product/${product.id}`}
                 style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', flexGrow: 1 }}
               >
-                <div style={{
-                  width: '100%',
-                  height: '220px',
-                  marginBottom: '15px',
-                  backgroundColor: '#ffffff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '10px'
-                }}>
-                  <img
-                    src={product.images && product.images.length > 0
-                          ? `${BACKEND_URL}${product.images[0]}`
-                          : 'https://placehold.co/300x300/eeeeee/999999?text=Нет+фото'}
-                    alt={product.name}
-                    style={{
-                      maxWidth: '100%',
-                      maxHeight: '100%',
-                      objectFit: 'contain'
-                    }}
-                  />
-                </div>
+
+                <CatalogItemGallery images={product.images} productName={product.name} />
+
+                {/* ВЫВОД БРЕНДА */}
+                {product.brand && (
+                  <div style={{ color: '#d4af37', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    {product.brand}
+                  </div>
+                )}
 
                 <h3 style={{ fontSize: '18px', fontWeight: '500', margin: '0 0 5px 0' }}>
                   {product.name}
                 </h3>
-
-                {/* ВЫВОД НАЗВАНИЯ КАТЕГОРИИ ПОД ТОВАРОМ (опционально, для красоты) */}
                 <div style={{ color: '#999', fontSize: '12px', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   {product.category_name}
                 </div>
-
                 <div style={{ color: '#555', fontSize: '14px', marginBottom: '20px', flexGrow: 1 }}>
                   Объем: {Number(product.quantity_value)} {product.measure_unit}
                 </div>
@@ -210,7 +352,6 @@ function Catalog() {
                 <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '15px' }}>
                   {product.sale_price} ₽
                 </div>
-
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button
@@ -225,7 +366,6 @@ function Catalog() {
                       style={quantityBtnStyle}
                     >+</button>
                   </div>
-
                   <button
                     onClick={() => handleAddToCart(product)}
                     disabled={addingId === product.id}
@@ -246,7 +386,6 @@ function Catalog() {
                   </button>
                 </div>
               </div>
-
             </div>
           ))}
         </div>
