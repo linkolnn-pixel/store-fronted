@@ -1,0 +1,6 @@
+services:
+  frontend:
+    build: .
+    ports:
+      - "3000:80"  # Доступ в браузере по адресу http://localhost:3000
+    restart: always

@@ -12,6 +12,23 @@ export const apiClient = axios.create({
     }
 });
 
+// Авторизация администратора (отправляем Form-Data)
+export const loginAdmin = async (username, password) => {
+    // Используем URLSearchParams для формирования application/x-www-form-urlencoded
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+
+    const response = await apiClient.post('/admin/login', formData, {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+    });
+
+    // Бэкенд возвращает { access_token: "...", token_type: "bearer" }
+    return response.data;
+};
+
 // Работа с ID сессии (корзины)
 export const getSessionId = () => localStorage.getItem('session_id');
 export const setSessionId = (id) => localStorage.setItem('session_id', id);

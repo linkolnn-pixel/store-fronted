@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchCart, checkoutCart, updateCartItem, removeCartItem, BACKEND_URL } from '../services/api';
 import { useCart } from '../context/CartContext';
 
@@ -17,6 +18,7 @@ const quantityBtnStyle = {
 };
 
 function Cart() {
+  const navigate = useNavigate();
   const { updateCartCount } = useCart();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -120,7 +122,7 @@ function Cart() {
       if (result.payment_url) {
         window.location.href = result.payment_url;
       } else {
-        window.location.href = '/success';
+        navigate('/success');
       }
     } catch (error) {
       alert('Ошибка при оформлении заказа. Проверьте введенные данные.');
