@@ -11,6 +11,7 @@ import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 
 import ProtectedRoute from './components/ProtectedRoute';
+import Profile from "./pages/Profile.jsx";
 
 function NavBar() {
   const { cartCount } = useCart();
@@ -37,6 +38,12 @@ function NavBar() {
       <Link to="/" style={linkStyle}>О владельце</Link>
       <Link to="/services" style={linkStyle}>Услуги</Link>
       <Link to="/catalog" style={linkStyle}>Каталог товаров</Link>
+
+      <Link to="/profile" style={linkStyle}>
+        Кабинет
+      </Link>
+      {/* ======================================= */}
+
       <Link to="/cart" style={{...linkStyle, color: '#d4af37', fontWeight: 'bold', display: 'flex', alignItems: 'center'}}>
         Корзина
           <span style={{
@@ -71,6 +78,7 @@ function App() {
               <Route path="/cart" element={<Cart />} />
               <Route path="/success" element={<Success />} />
               <Route path="/product/:id" element={<ProductPage />} />
+              <Route path="/profile" element={<Profile/>} />
 
               {/* Авторизация админа */}
               <Route path="/admin/login" element={<AdminLogin />} />
