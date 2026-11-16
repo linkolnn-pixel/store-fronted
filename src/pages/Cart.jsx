@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchCart, checkoutCart, updateCartItem, removeCartItem, BACKEND_URL, applyPromoCode, removePromoCode, checkGiftCertificate } from '../services/api';
 import { useCart } from '../context/CartContext';
+import './Cart.css';
 
 const quantityBtnStyle = {
   border: '1px solid #ccc',
@@ -249,7 +250,7 @@ function Cart() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px', fontFamily: 'sans-serif', color: '#333' }}>
+    <div className="cart-page" style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px', fontFamily: 'sans-serif', color: '#333' }}>
       <h1 style={{ fontSize: '24px', textTransform: 'uppercase', marginBottom: '30px', borderBottom: '2px solid #e0e0e0', paddingBottom: '10px' }}>
         Оформление заказа
       </h1>
@@ -338,13 +339,16 @@ function Cart() {
             </div>
 
             {/* === БЛОК ПОДАРОЧНОГО СЕРТИФИКАТА === */}
-            <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px dashed #ccc' }}>
+            <details className="cart-certificate">
+              <summary><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 8h18v4H3zM5 12v9h14v-9M12 8v13"/><path d="M12 8C4 8 5 1 9 3c2 1 3 5 3 5s1-4 3-5c4-2 5 5-3 5Z"/></svg>У меня есть подарочный сертификат</summary>
               {!appliedCertificate ? (
                 <div>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <input
                       type="text"
-                      placeholder="Подарочный сертификат"
+                      placeholder="Введите номер сертификата"
+                      aria-label="Номер подарочного сертификата"
+                      disabled={isCheckingCertificate}
                       value={giftCertificateCode}
                       onChange={(e) => {
                           setGiftCertificateCode(e.target.value.toUpperCase());
@@ -399,7 +403,7 @@ function Cart() {
                   </button>
                 </div>
               )}
-            </div>
+            </details>
             {/* ======================= */}
 
             {/* === БЛОК ИТОГОВЫХ СУММ === */}

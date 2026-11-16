@@ -1,0 +1,13 @@
+.cart-certificate { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ccc; }
+.cart-certificate summary { display: flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; font-size: 13px; padding: 8px 0; }
+.cart-certificate summary::-webkit-details-marker { display: none; }
+.cart-certificate summary::after { content: '⌄'; margin-left: auto; }
+.cart-certificate[open] summary::after { content: '⌃'; }
+.cart-certificate > div { margin-top: 10px; }
+.cart-page input { min-width: 0; }
+.cart-page button { flex-shrink: 0; }
+@media(max-width:600px) {
+  .cart-page > div > div { min-width: 0; }
+  .cart-page [style*="justify-content: space-between"] { flex-wrap: wrap; gap: 10px; }
+  .cart-certificate summary { font-size: 12px; }
+}

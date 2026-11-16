@@ -88,14 +88,14 @@ const GiftCertificatePage = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12">
+    <div className="gift-page">
       <h1 className="text-3xl font-light text-center mb-10">Электронный подарочный сертификат</h1>
 
-      <div className="flex flex-col md:flex-row gap-12 items-start">
+      <div className="gift-layout">
 
         {/* ЛЕВАЯ ЧАСТЬ: Визуализация сертификата */}
-        <div className="w-full md:w-1/2 sticky top-24">
-          <div className="aspect-[1.6/1] bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl p-8 flex flex-col justify-between text-white relative overflow-hidden">
+        <div className="gift-preview">
+          <div className="gift-card">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl"></div>
 
             <div className="relative z-10">
@@ -116,7 +116,7 @@ const GiftCertificatePage = () => {
         </div>
 
         {/* ПРАВАЯ ЧАСТЬ: Форма настройки */}
-        <div className="w-full md:w-1/2">
+        <div className="gift-form">
           <form onSubmit={handleAddToCart} className="space-y-8">
 
             {/* Выбор номинала */}

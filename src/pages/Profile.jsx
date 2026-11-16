@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import FavoritesSection from '../components/FavoritesSection';
 import {
   getCustomerToken,
   logoutCustomer,
@@ -153,6 +154,7 @@ function Profile() {
 
   if (!isAuthenticated) {
     return (
+      <>
       <div style={{ maxWidth: '400px', margin: '60px auto', padding: '20px', fontFamily: 'sans-serif' }}>
         <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>Вход в личный кабинет</h2>
         {authError && <div style={{ color: 'red', marginBottom: '15px', textAlign: 'center' }}>{authError}</div>}
@@ -178,11 +180,13 @@ function Profile() {
           </form>
         )}
       </div>
+      <FavoritesSection/>
+      </>
     );
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px', fontFamily: 'sans-serif', color: '#333' }}>
+    <><div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px', fontFamily: 'sans-serif', color: '#333' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eee', paddingBottom: '20px', marginBottom: '30px' }}>
         <h1 style={{ fontSize: '24px', margin: 0 }}>Личный кабинет</h1>
         <button onClick={handleLogout} style={{ padding: '8px 15px', backgroundColor: '#f5f5f5', border: '1px solid #ddd', borderRadius: '4px', cursor: 'pointer' }}>
@@ -304,7 +308,7 @@ function Profile() {
           )}
         </div>
       </div>
-    </div>
+    </div><FavoritesSection/></>
   );
 }
 

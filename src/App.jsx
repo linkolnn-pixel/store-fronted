@@ -1,8 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
+import { FavoritesProvider } from './context/FavoritesContext';
+import FavoritesSection from './components/FavoritesSection';
 
 // Импорт компонентов
 import NavBar from './components/NavBar';
+import Home from './pages/Home';
+import Delivery from './pages/Delivery';
+import { Link } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Импорт страниц
@@ -20,23 +25,26 @@ import GiftCertificatePage from './pages/GiftCertificatePage'; // <-- ДОБАВ
 
 function App() {
   return (
-    <CartProvider>
+    <FavoritesProvider><CartProvider>
       <Router>
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
 
           {/* Используем вынесенный компонент */}
           <NavBar />
 
-          <div style={{ flex: 1, backgroundColor: '#fff' }}>
+          <main id="main-content" style={{ flex: 1, backgroundColor: '#fff' }}>
             <Routes>
               {/* Публичные маршруты */}
-              <Route path="/" element={<About />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/delivery" element={<Delivery />} />
               <Route path="/services" element={<Services />} />
               <Route path="/catalog" element={<Catalog />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/success" element={<Success />} />
               <Route path="/product/:id" element={<ProductPage />} />
               <Route path="/profile" element={<Profile/>} />
+              <Route path="/favorites" element={<FavoritesSection />} />
               <Route path="/certificates" element={<GiftCertificatePage />} />
 
               {/* Авторизация админа */}
@@ -44,10 +52,11 @@ function App() {
               <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/product/:id" element={<ProtectedRoute><AdminProductEdit /></ProtectedRoute>} />
             </Routes>
-          </div>
+          </main>
+          <footer className="site-footer"><Link className="wordmark" to="/">a·m<span className="wordmark-note">SKINCARE</span></Link><p>Забота о коже. С вниманием к вам.</p><nav aria-label="Навигация в подвале"><Link to="/catalog">Каталог</Link><Link to="/delivery">Доставка</Link><Link to="/about">О нас</Link></nav></footer>
         </div>
       </Router>
-    </CartProvider>
+    </CartProvider></FavoritesProvider>
   );
 }
 

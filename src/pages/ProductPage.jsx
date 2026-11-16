@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom'; // Если используете React Router
 import { fetchProduct, addToCart, BACKEND_URL } from '../services/api';
 import { useCart } from '../context/CartContext';
+import FavoriteButton from '../components/FavoriteButton';
 
 export default function ProductPage() {
   const { id } = useParams(); // Получаем ID товара из URL
@@ -69,6 +70,7 @@ export default function ProductPage() {
       {/* ПРАВАЯ КОЛОНКА: Информация и Описание */}
       <div style={{ flex: '1 1 400px' }}>
         <h1 style={{ margin: '0 0 15px 0', fontSize: '28px', fontWeight: '500' }}>{product.title}</h1>
+        <FavoriteButton product={product} showLabel/>
         <div style={{ fontSize: '16px', color: '#666', marginBottom: '20px' }}>
           Артикул: {product.sku || product.internal_code} <br/>
           Объем: {Number(product.quantity_value)} {product.measure_unit}

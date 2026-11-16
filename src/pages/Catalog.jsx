@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { categoryTree, categoryIds } from '../services/categories';
 import { addToCart, fetchCatalog, BACKEND_URL, fetchCategories } from '../services/api';
 import { useCart } from '../context/CartContext';
+import CatalogFilters from '../components/CatalogFilters';
+import './Catalog.css';
+import FavoriteButton from '../components/FavoriteButton';
 
 // Стили для маленьких кнопок +/-
 const quantityBtnStyle = {
@@ -25,7 +29,7 @@ function CatalogItemGallery({ images, productName }) {
 
   const validImages = images && images.length > 0
     ? images.map(img => img.startsWith('http') ? img : `${BACKEND_URL}${img}`)
-    : ['https://placehold.co/300x300/eeeeee/999999?text=Нет+фото'];
+    : ['/product-placeholder.svg'];
 
   const handleMouseMove = (e) => {
     // === ДОБАВЛЕНА ПРОВЕРКА НА ТАЧСКРИН ===
@@ -146,15 +150,39 @@ function CatalogItemGallery({ images, productName }) {
 }
 
 function Catalog() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { updateCartCount } = useCart();
   const [products, setProducts] = useState([]);
 
   // Состояния для категорий и брендов
   const [categories, setCategories] = useState([]);
-  const [activeCategory, setActiveCategory] = useState(null);
-  const [activeBrand, setActiveBrand] = useState(null);
+  const activeCategory = searchParams.get('category');
+  const setActiveCategory = value => setSearchParams(previous => {
+    if (value === null) previous.delete('category');
+    else previous.set('category', value);
+    previous.delete('offset');
+    return previous;
+  });
+  const activeBrand = searchParams.get('brand');
+  const setActiveBrand = value => setSearchParams(previous => {
+    if (value === null) previous.delete('brand');
+    else previous.set('brand', value);
+    previous.delete('offset');
+    return previous;
+  });
+  const setQuery = value => setSearchParams(previous => {
+    if (value) previous.set('q', value);
+    else previous.delete('q');
+    previous.delete('offset');
+    return previous;
+  }, { replace: true });
+  const resetFilters = () => {
+    setSearchParams(previous => { previous.delete('category'); previous.delete('q'); previous.delete('brand'); previous.delete('offset'); return previous; });
+  };
+  const activeFilterCount = Number(Boolean(activeCategory)) + Number(Boolean(activeBrand)) + Number(Boolean(searchParams.get('q')?.trim()));
 
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [addingId, setAddingId] = useState(null);
   const [successId, setSuccessId] = useState(null);
   const [quantities, setQuantities] = useState({});
@@ -169,8 +197,9 @@ function Catalog() {
 
         const productsArray = catalogData.results ? catalogData.results : catalogData;
         setProducts(productsArray);
-        setCategories(categoriesData);
+        setCategories(categoryTree(categoriesData));
       } catch (error) {
+        setLoadError(true);
         console.error("Ошибка загрузки данных:", error);
       } finally {
         setLoading(false);
@@ -208,110 +237,58 @@ function Catalog() {
   const uniqueBrands = [...new Set(products.map(p => p.brand).filter(Boolean))];
 
   // Логика двойной фильтрации (по категории и бренду)
+  const findCategory = nodes => nodes.flatMap(node => [node, ...findCategory(node.children)]);
+  const selectedCategory = findCategory(categories).find(node => String(node.id) === activeCategory);
+  const selectedIds = selectedCategory ? categoryIds(selectedCategory) : [activeCategory];
+  const query = (searchParams.get('q') || '').trim().toLocaleLowerCase('ru');
   const filteredProducts = products.filter(product => {
-    const matchCategory = activeCategory ? product.category === activeCategory : true;
+    const productCategory = product.category?.id ?? product.category;
+    const matchCategory = activeCategory ? selectedIds.includes(String(productCategory)) : true;
     const matchBrand = activeBrand ? product.brand === activeBrand : true;
-    return matchCategory && matchBrand;
+    const matchSearch = !query || [product.title, product.name, product.brand].filter(Boolean).join(' ').toLocaleLowerCase('ru').includes(query);
+    return matchCategory && matchBrand && matchSearch;
   });
+  const pageSize = 24;
+  const rawOffset = Number(searchParams.get('offset'));
+  const offset = Number.isFinite(rawOffset) ? Math.max(0, Math.floor(rawOffset / pageSize) * pageSize) : 0;
+  const visibleProducts = filteredProducts.slice(0, Math.min(filteredProducts.length, offset + pageSize));
+  const remainingCount = filteredProducts.length - visibleProducts.length;
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 20px', fontFamily: 'sans-serif', color: '#333' }}>
-      <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+    <div className="catalog-page" style={{ maxWidth: '1360px', margin: '0 auto', padding: '48px 24px', color: '#242424' }}>
+      <div className="breadcrumbs"><Link to="/">Главная</Link> / Каталог{selectedCategory && ` / ${selectedCategory.name}`}</div>
+
+      <div className="catalog-page-heading">
         <h1 style={{ fontSize: '28px', fontWeight: 'normal', letterSpacing: '2px', textTransform: 'uppercase' }}>
-          Домашний уход
+          {selectedCategory?.name || 'Каталог ухода'}
         </h1>
         <p style={{ color: '#777', marginTop: '10px' }}>Профессиональная косметика из наличия</p>
       </div>
 
-      {/* ===== ПАНЕЛЬ ФИЛЬТРОВ ===== */}
-      {!loading && (
-        <div style={{ marginBottom: '40px' }}>
-
-          {/* ФИЛЬТР ПО КАТЕГОРИЯМ */}
-          {categories.length > 0 && (
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '15px', flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ color: '#888', fontSize: '14px', marginRight: '10px' }}>Категория:</span>
-              <button
-                onClick={() => setActiveCategory(null)}
-                style={{
-                  padding: '6px 16px', borderRadius: '20px', fontSize: '14px',
-                  border: activeCategory === null ? 'none' : '1px solid #ccc',
-                  backgroundColor: activeCategory === null ? '#333' : '#fff',
-                  color: activeCategory === null ? '#fff' : '#333',
-                  cursor: 'pointer', transition: 'all 0.2s'
-                }}
-              >
-                Все
-              </button>
-              {categories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  style={{
-                    padding: '6px 16px', borderRadius: '20px', fontSize: '14px',
-                    border: activeCategory === cat.id ? 'none' : '1px solid #ccc',
-                    backgroundColor: activeCategory === cat.id ? '#333' : '#fff',
-                    color: activeCategory === cat.id ? '#fff' : '#333',
-                    cursor: 'pointer', transition: 'all 0.2s'
-                  }}
-                >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* ФИЛЬТР ПО БРЕНДАМ */}
-          {uniqueBrands.length > 0 && (
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ color: '#888', fontSize: '14px', marginRight: '10px' }}>Бренд:</span>
-              <button
-                onClick={() => setActiveBrand(null)}
-                style={{
-                  padding: '6px 16px', borderRadius: '20px', fontSize: '14px',
-                  border: activeBrand === null ? 'none' : '1px solid #ccc',
-                  backgroundColor: activeBrand === null ? '#d4af37' : '#fff',
-                  color: activeBrand === null ? '#fff' : '#333',
-                  cursor: 'pointer', transition: 'all 0.2s'
-                }}
-              >
-                Все
-              </button>
-              {uniqueBrands.map(brand => (
-                <button
-                  key={brand}
-                  onClick={() => setActiveBrand(brand)}
-                  style={{
-                    padding: '6px 16px', borderRadius: '20px', fontSize: '14px',
-                    border: activeBrand === brand ? 'none' : '1px solid #ccc',
-                    backgroundColor: activeBrand === brand ? '#d4af37' : '#fff',
-                    color: activeBrand === brand ? '#fff' : '#333',
-                    cursor: 'pointer', transition: 'all 0.2s'
-                  }}
-                >
-                  {brand}
-                </button>
-              ))}
-            </div>
-          )}
-
-        </div>
-      )}
+      <div className="catalog-layout">
+        <CatalogFilters
+          categories={categories} brands={uniqueBrands}
+          activeCategory={activeCategory} setActiveCategory={setActiveCategory}
+          activeBrand={activeBrand} setActiveBrand={setActiveBrand}
+          query={searchParams.get('q') || ''} setQuery={setQuery}
+          reset={resetFilters} activeCount={activeFilterCount} disabled={loading}
+        />
+        <section className="catalog-results" aria-label="Товары каталога">
+          <div className="catalog-results-toolbar" role="status" aria-live="polite">{loading ? 'Загрузка...' : loadError ? 'Каталог временно недоступен' : `Найдено товаров: ${filteredProducts.length}`}</div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Загрузка ассортимента со склада...</div>
+      ) : loadError ? (
+        <div role="alert" style={{ textAlign: 'center', padding: '40px', color: '#777' }}>Не удалось загрузить каталог. Попробуйте обновить страницу позже.</div>
       ) : products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>Товаров пока нет в наличии.</div>
       ) : filteredProducts.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>По вашему запросу товаров не найдено.</div>
       ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '30px'
-        }}>
-          {filteredProducts.map((product) => (
-            <div key={product.id} style={{
+        <>
+        <div className="catalog-product-grid">
+          {visibleProducts.map((product) => (
+            <div className="catalog-product-card" key={product.id} style={{
               border: '1px solid #eaeaea',
               borderRadius: '8px',
               padding: '20px',
@@ -323,12 +300,13 @@ function Catalog() {
             onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.05)'}
             onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}
             >
+              <FavoriteButton product={product}/>
               <Link
                 to={`/product/${product.id}`}
                 style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', flexGrow: 1 }}
               >
 
-                <CatalogItemGallery images={product.images} productName={product.name} />
+                <CatalogItemGallery images={product.images} productName={product.title || product.name} />
 
                 {/* ВЫВОД БРЕНДА */}
                 {product.brand && (
@@ -338,7 +316,7 @@ function Catalog() {
                 )}
 
                 <h3 style={{ fontSize: '18px', fontWeight: '500', margin: '0 0 5px 0' }}>
-                  {product.name}
+                  {product.title || product.name}
                 </h3>
                 <div style={{ color: '#999', fontSize: '12px', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   {product.category_name}
@@ -389,7 +367,14 @@ function Catalog() {
             </div>
           ))}
         </div>
+        <div className="catalog-pagination">
+          {remainingCount > 0 && <button className="catalog-load-more" type="button" onClick={() => setSearchParams(previous => { previous.set('offset', offset + pageSize); return previous; })}>Показать ещё {Math.min(pageSize, remainingCount)}</button>}
+          <p role="status" aria-live="polite">Показано {visibleProducts.length} из {filteredProducts.length}</p>
+        </div>
+        </>
       )}
+        </section>
+      </div>
     </div>
   );
 }
