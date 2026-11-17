@@ -88,6 +88,11 @@ export const fetchCatalog = async () => {
     return response.data;
 };
 
+export const fetchNewArrivals = async () => {
+    const response = await apiClient.get('/catalog/new_arrivals');
+    return response.data;
+};
+
 export const fetchProduct = async (id) => {
     const response = await apiClient.get(`/catalog/${id}`);
     return response.data;

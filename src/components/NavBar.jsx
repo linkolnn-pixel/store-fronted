@@ -96,7 +96,7 @@ export default function NavBar() {
             setPanel('catalog');
             requestAnimationFrame(() => header.current.querySelector('.catalog-flyout a')?.focus());
           }
-        }}>Каталог <span className="chevron">⌄</span></Link>
+        }}>Каталог <span className="chevron"></span></Link>
         <NavLink to="/services" onClick={close}>Подбор ухода</NavLink>
         <NavLink to="/certificates" onClick={close}>Подарочные карты</NavLink>
         <NavLink to="/delivery" onClick={close}>Доставка</NavLink>

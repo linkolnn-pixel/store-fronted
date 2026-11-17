@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogMenu.css';
+import { NEW_ARRIVALS_CATEGORY } from '../services/categories';
 
 const categoryUrl = node => `/catalog?category=${encodeURIComponent(node.id)}`;
 
-function Arrow({ back = false }) {
-  return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d={back ? 'm15 5-7 7 7 7' : 'm9 5 7 7-7 7'}/></svg>;
-}
-
-export default function CatalogMenu({ categories, mobile, close, openSearch }) {
+export default function CatalogMenu({ categories: warehouseCategories, mobile, close, openSearch }) {
+  const categories = [NEW_ARRIVALS_CATEGORY, ...warehouseCategories];
   const [path, setPath] = useState([]);
   const [mobileCatalog, setMobileCatalog] = useState(false);
   const current = path.at(-1);
@@ -25,24 +23,24 @@ export default function CatalogMenu({ categories, mobile, close, openSearch }) {
     <div className="catalog-mobile-toolbar"><span>Меню</span><button type="button" onClick={close} aria-label="Закрыть меню">×</button></div>
     <div className="catalog-mobile-screen" key={mobileCatalog ? current?.id ?? 'categories' : 'menu'}>
       {mobileCatalog ? <>
-        <button className="catalog-mobile-back" type="button" onClick={back}><Arrow back/>{current?.name || 'Каталог'}</button>
-        <Link className="catalog-mobile-all" to={current ? categoryUrl(current) : '/catalog'} onClick={close}>{current ? 'Все товары категории' : 'Смотреть все товары'}<Arrow/></Link>
+        <button className="catalog-mobile-back" type="button" onClick={back}>{current?.name || 'Каталог'}</button>
+        <Link className="catalog-mobile-all" to={current ? categoryUrl(current) : '/catalog'} onClick={close}>{current ? 'Все товары категории' : 'Смотреть все товары'}</Link>
         <ul className="catalog-mobile-list">
           {children.map(node => <li key={node.id}>{node.children.length ?
-            <button type="button" onClick={() => setPath(previous => [...previous, node])}>{node.name}<Arrow/></button> :
+            <button type="button" onClick={() => setPath(previous => [...previous, node])}>{node.name}</button> :
             <Link to={categoryUrl(node)} onClick={close}>{node.name}</Link>}
           </li>)}
         </ul>
         {!children.length && <p className="catalog-unavailable">Категории пока недоступны. Все товары можно посмотреть в каталоге.</p>}
       </> : <>
         <ul className="catalog-mobile-list catalog-mobile-main">
-          <li><button type="button" onClick={() => setMobileCatalog(true)}>Каталог<Arrow/></button></li>
+          <li><button type="button" onClick={() => setMobileCatalog(true)}>Каталог</button></li>
           <li><Link to="/services" onClick={close}>Подбор ухода</Link></li>
           <li><Link to="/certificates" onClick={close}>Подарочные карты</Link></li>
           <li><Link to="/delivery" onClick={close}>Доставка</Link></li>
           <li><Link to="/about" onClick={close}>О нас</Link></li>
         </ul>
-        <div className="catalog-mobile-secondary"><button type="button" onClick={openSearch}>Поиск по магазину<Arrow/></button><Link to="/" onClick={close}>Главная</Link></div>
+        <div className="catalog-mobile-secondary"><button type="button" onClick={openSearch}>Поиск по магазину</button><Link to="/" onClick={close}>Главная</Link></div>
       </>}
     </div>
   </section>;
@@ -63,7 +61,7 @@ export default function CatalogMenu({ categories, mobile, close, openSearch }) {
               const previous = event.target.closest('.catalog-cascade-column')?.previousElementSibling?.querySelector('.is-selected a');
               previous?.focus();
             }
-          }}>{node.name}{node.children.length > 0 && <Arrow/>}</Link>
+          }}>{node.name}</Link>
         </li>)}
         {depth === 0 && !nodes.length && <li className="catalog-unavailable">Категории пока недоступны.</li>}
       </ul>)}

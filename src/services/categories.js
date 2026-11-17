@@ -20,3 +20,5 @@ export function categoryTree(data) {
 export function categoryIds(node) {
   return [String(node.id), ...node.children.flatMap(categoryIds)];
 }
+
+export const NEW_ARRIVALS_CATEGORY = { id: 'new-arrivals', name: 'Новинки', children: [] };

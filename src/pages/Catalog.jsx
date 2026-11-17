@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { categoryTree, categoryIds } from '../services/categories';
-import { addToCart, fetchCatalog, BACKEND_URL, fetchCategories } from '../services/api';
+import { categoryTree, categoryIds, NEW_ARRIVALS_CATEGORY } from '../services/categories';
+import { addToCart, fetchCatalog, fetchNewArrivals, BACKEND_URL, fetchCategories } from '../services/api';
 import { useCart } from '../context/CartContext';
 import CatalogFilters from '../components/CatalogFilters';
 import './Catalog.css';
@@ -157,6 +157,7 @@ function Catalog() {
   // Состояния для категорий и брендов
   const [categories, setCategories] = useState([]);
   const activeCategory = searchParams.get('category');
+  const isNewArrivals = activeCategory === NEW_ARRIVALS_CATEGORY.id;
   const setActiveCategory = value => setSearchParams(previous => {
     if (value === null) previous.delete('category');
     else previous.set('category', value);
@@ -188,25 +189,31 @@ function Catalog() {
   const [quantities, setQuantities] = useState({});
 
   useEffect(() => {
+    let active = true;
     const loadData = async () => {
+      setLoading(true);
+      setLoadError(false);
       try {
         const [catalogData, categoriesData] = await Promise.all([
-          fetchCatalog(),
+          isNewArrivals ? fetchNewArrivals() : fetchCatalog(),
           fetchCategories()
         ]);
 
+        if (!active) return;
         const productsArray = catalogData.results ? catalogData.results : catalogData;
         setProducts(productsArray);
-        setCategories(categoryTree(categoriesData));
+        setCategories([NEW_ARRIVALS_CATEGORY, ...categoryTree(categoriesData)]);
       } catch (error) {
+        if (!active) return;
         setLoadError(true);
         console.error("Ошибка загрузки данных:", error);
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     loadData();
-  }, []);
+    return () => { active = false; };
+  }, [isNewArrivals]);
 
   const handleQuantityChange = (productId, delta) => {
     setQuantities(prev => {
@@ -226,7 +233,7 @@ function Catalog() {
       setSuccessId(product.id);
       setQuantities(prev => ({ ...prev, [product.id]: 1 }));
       setTimeout(() => setSuccessId(null), 2000);
-    } catch (error) {
+    } catch {
       alert('Ошибка при добавлении в корзину.');
     } finally {
       setAddingId(null);
@@ -243,7 +250,7 @@ function Catalog() {
   const query = (searchParams.get('q') || '').trim().toLocaleLowerCase('ru');
   const filteredProducts = products.filter(product => {
     const productCategory = product.category?.id ?? product.category;
-    const matchCategory = activeCategory ? selectedIds.includes(String(productCategory)) : true;
+    const matchCategory = activeCategory && !isNewArrivals ? selectedIds.includes(String(productCategory)) : true;
     const matchBrand = activeBrand ? product.brand === activeBrand : true;
     const matchSearch = !query || [product.title, product.name, product.brand].filter(Boolean).join(' ').toLocaleLowerCase('ru').includes(query);
     return matchCategory && matchBrand && matchSearch;

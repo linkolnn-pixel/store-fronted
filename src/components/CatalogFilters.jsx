@@ -4,7 +4,7 @@ function CategoryOptions({ nodes, activeCategory, select, depth = 0 }) {
   return <ul className="filter-category-list">
     {nodes.map(node => <li key={node.id}>
       <button type="button" className={activeCategory === String(node.id) ? 'is-active' : ''} aria-pressed={activeCategory === String(node.id)} style={{ paddingLeft: `${12 + depth * 18}px` }} onClick={() => select(node.id)}>
-        {depth > 0 && <span className="filter-tree-mark" aria-hidden="true">↳</span>}{node.name}
+        {node.name}
       </button>
       {node.children.length > 0 && <CategoryOptions nodes={node.children} activeCategory={activeCategory} select={select} depth={depth + 1}/>}
     </li>)}
