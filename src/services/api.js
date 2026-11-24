@@ -88,6 +88,11 @@ export const fetchCatalog = async () => {
     return response.data;
 };
 
+export const fetchRecommendations = async (query, { signal } = {}) => {
+    const response = await apiClient.post('/assistant/recommend', { query, limit: 5 }, { signal });
+    return response.data;
+};
+
 export const fetchNewArrivals = async () => {
     const response = await apiClient.get('/catalog/new_arrivals');
     return response.data;

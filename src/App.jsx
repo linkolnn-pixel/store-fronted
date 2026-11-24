@@ -13,6 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Импорт страниц
 import About from './pages/About';
 import Catalog from './pages/Catalog';
+import AISearch from './pages/AISearch';
 import Services from './pages/Services';
 import Cart from './pages/Cart';
 import Success from './pages/Success';
@@ -40,6 +41,7 @@ function App() {
               <Route path="/delivery" element={<Delivery />} />
               <Route path="/services" element={<Services />} />
               <Route path="/catalog" element={<Catalog />} />
+              <Route path="/ai-search" element={<AISearch />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/success" element={<Success />} />
               <Route path="/product/:id" element={<ProductPage />} />

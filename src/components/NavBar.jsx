@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { fetchCategories } from '../services/api';
 import { categoryTree } from '../services/categories';
 import CatalogMenu from './CatalogMenu';
+import SearchForm from './SearchForm';
 
 function Icon({ name }) {
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -19,9 +20,7 @@ export default function NavBar() {
   const { cartCount } = useCart();
   const [panel, setPanel] = useState(null);
   const [categories, setCategories] = useState([]);
-  const [query, setQuery] = useState('');
   const [mobile, setMobile] = useState(() => window.matchMedia('(max-width: 800px)').matches);
-  const navigate = useNavigate();
   const header = useRef(null);
   const search = useRef(null);
   const leaveTimer = useRef(null);
@@ -81,7 +80,11 @@ export default function NavBar() {
     if (panel === 'search') search.current?.focus();
     return () => { document.removeEventListener('keydown', dismiss); document.removeEventListener('pointerdown', dismiss); };
   }, [panel, mobile]);
-  return <header className="site-header" ref={header} onPointerEnter={cancelLeave} onPointerLeave={scheduleClose} onBlur={event => { if (!mobile && !event.currentTarget.contains(event.relatedTarget)) close(); }}>
+  return <header className="site-header" ref={header} onPointerEnter={cancelLeave} onPointerLeave={scheduleClose} onBlur={event => {
+    // Clicking a label can temporarily blur its input before focusing the checkbox.
+    // Outside pointer clicks are handled by dismiss; close here on actual focus transfers.
+    if (!mobile && event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) close();
+  }}>
     <a className="skip-link" href="#main-content">Перейти к содержимому</a>
     <div className="header-inner">
       <Link className="wordmark" to="/" onClick={close}>a<span>·</span>m<span className="wordmark-note">SKINCARE</span></Link>
@@ -116,6 +119,6 @@ export default function NavBar() {
     </nav>
     <button className={`icon-button mobile-search-button ${panel === 'catalog' ? 'is-catalog-open' : ''}`} type="button" aria-label="Поиск" aria-controls="header-search" aria-expanded={panel === 'search'} onClick={() => toggle('search')}><Icon name={panel === 'search' ? 'close' : 'search'}/></button>
     {panel === 'catalog' && <CatalogMenu categories={categories} mobile={mobile} close={close} openSearch={() => setPanel('search')}/>}
-    {panel === 'search' && <form id="header-search" className="header-panel search-panel" onSubmit={event => { event.preventDefault(); navigate(`/catalog?q=${encodeURIComponent(query.trim())}`); close(); }}><label htmlFor="product-search">Найдите свой уход</label><div><input id="product-search" ref={search} value={query} onChange={event => setQuery(event.target.value)} placeholder="Название средства или бренд" type="search"/><button className="dark-button">Найти →</button></div></form>}
+    {panel === 'search' && <SearchForm panel inputRef={search} onSearch={close}/>}
   </header>;
 }
